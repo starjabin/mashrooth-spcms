@@ -1,0 +1,7 @@
+{
+  "buildCommand": null,
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/((?!api/|import\\.html|dashboard-modules\\.js).*)", "destination": "/index.html" }
+  ]
+}

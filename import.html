@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mashrooth SPCMS — Bulk Data Import</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f172a; --surface: #1e293b; --border: #334155;
+      --accent: #0d9488; --accent2: #6366f1; --danger: #ef4444;
+      --text: #f1f5f9; --muted: #94a3b8; --success: #22c55e;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Tajawal', 'Inter', sans-serif; min-height: 100vh; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; gap: 16px; }
+    header h1 { font-size: 20px; font-weight: 700; }
+    header span { color: var(--muted); font-size: 13px; }
+    .back-link { color: var(--accent); text-decoration: none; font-size: 13px; margin-right: auto; }
+    .back-link:hover { text-decoration: underline; }
+    main { max-width: 960px; margin: 0 auto; padding: 32px 24px; }
+
+    .danger-zone {
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 12px; padding: 20px 24px; margin-bottom: 32px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .danger-zone .info { flex: 1; min-width: 200px; }
+    .danger-zone h2 { font-size: 15px; font-weight: 700; color: #fca5a5; margin-bottom: 4px; }
+    .danger-zone p { font-size: 13px; color: var(--muted); }
+
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+    .btn:hover { opacity: .85; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: var(--accent2); color: #fff; }
+    .btn-outline { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    .section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 24px; overflow: hidden; }
+    .section-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .section-header h2 { font-size: 16px; font-weight: 700; flex: 1; }
+    .section-header .badge { background: var(--bg); border: 1px solid var(--border); color: var(--muted); font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+    .section-body { padding: 20px 24px; }
+
+    .schema-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px; }
+    .schema-table th { background: var(--bg); color: var(--muted); text-align: right; padding: 8px 12px; font-weight: 600; border-bottom: 1px solid var(--border); }
+    .schema-table td { padding: 8px 12px; border-bottom: 1px solid rgba(51,65,85,0.5); vertical-align: top; }
+    .schema-table tr:last-child td { border-bottom: none; }
+    .req { color: #fca5a5; font-weight: 700; }
+    .opt { color: var(--muted); }
+    .code { font-family: monospace; background: var(--bg); padding: 1px 6px; border-radius: 4px; font-size: 11px; }
+
+    .upload-area { border: 2px dashed var(--border); border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; }
+    .upload-area:hover, .upload-area.drag { border-color: var(--accent); background: rgba(13,148,136,0.05); }
+    .upload-area p { color: var(--muted); font-size: 13px; margin-top: 8px; }
+    input[type=file][style*="display:none"] { display: none !important; }
+
+    .preview-table-wrap { overflow-x: auto; max-height: 280px; overflow-y: auto; margin: 16px 0; border-radius: 8px; border: 1px solid var(--border); }
+    .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .preview-table th { background: var(--bg); color: var(--muted); padding: 8px 12px; text-align: right; position: sticky; top: 0; }
+    .preview-table td { padding: 7px 12px; border-top: 1px solid rgba(51,65,85,0.4); white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+    .preview-table tr:hover td { background: rgba(13,148,136,0.05); }
+
+    .status { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 10px 16px; border-radius: 8px; margin-top: 12px; }
+    .status.ok { background: rgba(34,197,94,0.1); color: var(--success); border: 1px solid rgba(34,197,94,0.2); }
+    .status.err { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+    .status.info { background: rgba(99,102,241,0.1); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.2); }
+
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media(max-width:600px){ .grid2 { grid-template-columns: 1fr; } }
+
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); padding: 12px 20px; border-radius: 10px; font-size: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); z-index: 9999; display: none; }
+    .toast.show { display: block; animation: slidein .25s ease; }
+    @keyframes slidein { from { transform: translateY(20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+
+    .tip { background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2); border-radius: 8px; padding: 12px 16px; font-size: 12px; color: #a5b4fc; margin-bottom: 16px; line-height: 1.6; }
+    .tip strong { color: #c7d2fe; }
+
+    /* Document upload extras */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    @media(max-width:640px){ .form-grid { grid-template-columns: 1fr; } }
+    .form-field label { display: block; font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 6px; letter-spacing: .4px; text-transform: uppercase; }
+    .form-field select, .form-field input[type=text] {
+      width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+      padding: 9px 12px; border-radius: 8px; font-size: 13px; font-family: inherit;
+      appearance: none; -webkit-appearance: none; outline: none;
+    }
+    .form-field select:focus, .form-field input[type=text]:focus { border-color: var(--accent); }
+
+    .upload-area.multi { cursor: pointer; }
+    .doc-queue { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .doc-card {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 16px; display: flex; align-items: flex-start; gap: 12px;
+    }
+    .doc-card .doc-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+    .doc-card .doc-info { flex: 1; min-width: 0; }
+    .doc-card .doc-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .doc-card .doc-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .doc-card .doc-status { font-size: 12px; margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+    .doc-card .doc-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; flex-shrink: 0; padding: 0; }
+    .doc-card .doc-remove:hover { color: var(--danger); }
+    .doc-card.done { border-color: rgba(34,197,94,0.3); }
+    .doc-card.error { border-color: rgba(239,68,68,0.3); }
+    .doc-card.processing { border-color: rgba(99,102,241,0.3); }
+    .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+    .progress-bar .fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .3s; width: 0%; }
+    .tag { display: inline-block; padding: 1px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+    .tag-pending { background: rgba(148,163,184,0.15); color: var(--muted); }
+    .tag-processing { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+    .tag-done { background: rgba(34,197,94,0.15); color: var(--success); }
+    .tag-error { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>&#x1F4E5; Bulk Data Import</h1>
+    <span>Mashrooth SPCMS — Import Tool</span>
+  </div>
+  <a class="back-link" href="/">&#x2190; Back to App</a>
+</header>
+
+<main>
+
+  <!-- DANGER ZONE -->
+  <div class="danger-zone">
+    <div class="info">
+      <h2>&#x26A0;&#xFE0F; Clear All Demo Data</h2>
+      <p>Removes every demo project, contract, risk, LCGPA record, and claim from this browser. This cannot be undone. Do this before importing your real data.</p>
+    </div>
+    <button class="btn btn-danger" onclick="clearAll()">&#x1F5D1; Clear All Demo Data</button>
+  </div>
+
+  <!-- PROJECTS -->
+  <div class="section" id="sec-projects">
+    <div class="section-header">
+      <h2>&#x1F3D7; Projects</h2>
+      <span class="badge" id="badge-projects">0 records</span>
+      <button class="btn btn-outline btn-sm" onclick="downloadTemplate('projects')">&#x2B07; Download CSV Template</button>
+    </div>
+    <div class="section-body">
+      <div class="tip">
+        <strong>Required fields:</strong> name, status, budget, startDate, endDate<br>
+        <strong>Status values:</strong> planning | active | completed | on-hold<br>
+        <strong>Date format:</strong> YYYY-MM-DD &nbsp;|&nbsp; <strong>Budget:</strong> number in SAR (e.g. 5000000)
+      </div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Required</th><th>Example</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="code">name</span></td><td><span class="req">Required</span></td><td>King Salman Park Phase 2</td><td>Project title</td></tr>
+          <tr><td><span class="code">status</span></td><td><span class="req">Required</span></td><td>active</td><td>planning / active / completed / on-hold</td></tr>
+          <tr><td><span class="code">budget</span></td><td><span class="req">Required</span></td><td>12500000</td><td>SAR, numbers only</td></tr>
+          <tr><td><span class="code">startDate</span></td><td><span class="req">Required</span></td><td>2024-01-15</td><td>YYYY-MM-DD</td></tr>
+          <tr><td><span class="code">endDate</span></td><td><span class="req">Required</span></td><td>2025-06-30</td><td>YYYY-MM-DD</td></tr>
+          <tr><td><span class="code">client</span></td><td><span class="opt">Optional</span></td><td>NEOM Authority</td><td>Client / owner name</td></tr>
+          <tr><td><span class="code">contractor</span></td><td><span class="opt">Optional</span></td><td>Saudi Binladin Group</td><td>Main contractor</td></tr>
+          <tr><td><span class="code">location</span></td><td><span class="opt">Optional</span></td><td>Riyadh, Saudi Arabia</td><td>Project location</td></tr>
+          <tr><td><span class="code">description</span></td><td><span class="opt">Optional</span></td><td>Infrastructure works...</td><td>Short description</td></tr>
+          <tr><td><span class="code">localContentTarget</span></td><td><span class="opt">Optional</span></td><td>40</td><td>% LCGPA target (0–100)</td></tr>
+          <tr><td><span class="code">completionPct</span></td><td><span class="opt">Optional</span></td><td>65</td><td>% physical completion (0–100)</td></tr>
+        </tbody>
+      </table>
+      <input type="file" id="file-projects" accept=".csv" onchange="handleFile('projects', this)" style="display:none" />
+      <label class="upload-area" id="drop-projects" for="file-projects" style="cursor:pointer;display:block">
+        <div>&#x1F4C4; Click or drag a CSV file here</div>
+        <p>projects.csv — up to 500 rows</p>
+      </label>
+      <div id="preview-projects"></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="import-projects" onclick="importData('projects')" disabled>&#x2705; Import Projects</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTRACTS -->
+  <div class="section" id="sec-contracts">
+    <div class="section-header">
+      <h2>&#x1F4CB; Contract Documents</h2>
+      <span class="badge" id="badge-contracts">0 records</span>
+      <button class="btn btn-outline btn-sm" onclick="downloadTemplate('contracts')">&#x2B07; Download CSV Template</button>
+    </div>
+    <div class="section-body">
+      <div class="tip">
+        <strong>Required:</strong> projectId, title, type, status<br>
+        <strong>projectId:</strong> must match an existing project ID (shown in the Projects table above after import)<br>
+        <strong>Type values:</strong> FIDIC-Red | FIDIC-Yellow | FIDIC-Silver | FIDIC-Gold | Local | Framework | NEC | Other
+      </div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Required</th><th>Example</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="code">projectId</span></td><td><span class="req">Required</span></td><td>proj_abc123</td><td>From projects list (auto-generated)</td></tr>
+          <tr><td><span class="code">title</span></td><td><span class="req">Required</span></td><td>Main Civil Works Agreement</td><td>Document title</td></tr>
+          <tr><td><span class="code">type</span></td><td><span class="req">Required</span></td><td>FIDIC-Red</td><td>Contract type</td></tr>
+          <tr><td><span class="code">status</span></td><td><span class="req">Required</span></td><td>active</td><td>draft / active / expired / terminated</td></tr>
+          <tr><td><span class="code">value</span></td><td><span class="opt">Optional</span></td><td>8500000</td><td>Contract value SAR</td></tr>
+          <tr><td><span class="code">signedDate</span></td><td><span class="opt">Optional</span></td><td>2024-02-01</td><td>YYYY-MM-DD</td></tr>
+          <tr><td><span class="code">expiryDate</span></td><td><span class="opt">Optional</span></td><td>2025-12-31</td><td>YYYY-MM-DD</td></tr>
+          <tr><td><span class="code">parties</span></td><td><span class="opt">Optional</span></td><td>Client; Contractor; Engineer</td><td>Semicolon-separated</td></tr>
+          <tr><td><span class="code">retentionPct</span></td><td><span class="opt">Optional</span></td><td>5</td><td>Retention % (0–100)</td></tr>
+          <tr><td><span class="code">notes</span></td><td><span class="opt">Optional</span></td><td>DAB appointed 2024-03</td><td>Free text notes</td></tr>
+        </tbody>
+      </table>
+      <input type="file" id="file-contracts" accept=".csv" onchange="handleFile('contracts', this)" style="display:none" />
+      <label class="upload-area" id="drop-contracts" for="file-contracts" style="cursor:pointer;display:block">
+        <div>&#x1F4C4; Click or drag a CSV file here</div>
+        <p>contracts.csv — up to 500 rows</p>
+      </label>
+      <div id="preview-contracts"></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="import-contracts" onclick="importData('contracts')" disabled>&#x2705; Import Contracts</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRC -->
+  <div class="section" id="sec-grc">
+    <div class="section-header">
+      <h2>&#x1F6E1; GRC Risks &amp; Compliance Controls</h2>
+      <span class="badge" id="badge-grc">0 records</span>
+      <button class="btn btn-outline btn-sm" onclick="downloadTemplate('grc')">&#x2B07; Download CSV Template</button>
+    </div>
+    <div class="section-body">
+      <div class="tip">
+        <strong>Required:</strong> title, category, likelihood, impact, status<br>
+        <strong>Likelihood / Impact:</strong> 1 (Very Low) to 5 (Critical)<br>
+        <strong>Category:</strong> Financial | Legal | Operational | Regulatory | Safety | Technical | Environmental | Other
+      </div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Required</th><th>Example</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="code">title</span></td><td><span class="req">Required</span></td><td>Delay in material delivery</td><td>Risk title</td></tr>
+          <tr><td><span class="code">category</span></td><td><span class="req">Required</span></td><td>Operational</td><td>See above</td></tr>
+          <tr><td><span class="code">likelihood</span></td><td><span class="req">Required</span></td><td>3</td><td>1–5</td></tr>
+          <tr><td><span class="code">impact</span></td><td><span class="req">Required</span></td><td>4</td><td>1–5</td></tr>
+          <tr><td><span class="code">status</span></td><td><span class="req">Required</span></td><td>open</td><td>open / mitigated / closed / monitoring</td></tr>
+          <tr><td><span class="code">owner</span></td><td><span class="opt">Optional</span></td><td>Ahmed Al-Rashidi</td><td>Risk owner name</td></tr>
+          <tr><td><span class="code">mitigation</span></td><td><span class="opt">Optional</span></td><td>Dual-source procurement</td><td>Mitigation plan</td></tr>
+          <tr><td><span class="code">projectId</span></td><td><span class="opt">Optional</span></td><td>proj_abc123</td><td>Link to project</td></tr>
+          <tr><td><span class="code">dueDate</span></td><td><span class="opt">Optional</span></td><td>2025-03-01</td><td>YYYY-MM-DD</td></tr>
+          <tr><td><span class="code">regulation</span></td><td><span class="opt">Optional</span></td><td>ZATCA</td><td>Applicable regulation</td></tr>
+        </tbody>
+      </table>
+      <input type="file" id="file-grc" accept=".csv" onchange="handleFile('grc', this)" style="display:none" />
+      <label class="upload-area" id="drop-grc" for="file-grc" style="cursor:pointer;display:block">
+        <div>&#x1F4C4; Click or drag a CSV file here</div>
+        <p>grc_risks.csv — up to 500 rows</p>
+      </label>
+      <div id="preview-grc"></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="import-grc" onclick="importData('grc')" disabled>&#x2705; Import GRC Risks</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LCGPA -->
+  <div class="section" id="sec-lcgpa">
+    <div class="section-header">
+      <h2>&#x1F1F8;&#x1F1E6; LCGPA Local Content Records</h2>
+      <span class="badge" id="badge-lcgpa">0 records</span>
+      <button class="btn btn-outline btn-sm" onclick="downloadTemplate('lcgpa')">&#x2B07; Download CSV Template</button>
+    </div>
+    <div class="section-body">
+      <div class="tip">
+        <strong>Required:</strong> projectId, category, itemName, totalValue, localValue<br>
+        <strong>Local Content % is calculated automatically</strong> (localValue ÷ totalValue × 100)<br>
+        <strong>Category:</strong> Labor | Materials | Equipment | Services | Subcontracting | Training | Other
+      </div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Required</th><th>Example</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="code">projectId</span></td><td><span class="req">Required</span></td><td>proj_abc123</td><td>Link to project</td></tr>
+          <tr><td><span class="code">category</span></td><td><span class="req">Required</span></td><td>Labor</td><td>See above</td></tr>
+          <tr><td><span class="code">itemName</span></td><td><span class="req">Required</span></td><td>Civil engineering manpower</td><td>Description of spend item</td></tr>
+          <tr><td><span class="code">totalValue</span></td><td><span class="req">Required</span></td><td>2500000</td><td>Total spend SAR</td></tr>
+          <tr><td><span class="code">localValue</span></td><td><span class="req">Required</span></td><td>1800000</td><td>Saudi/local portion SAR</td></tr>
+          <tr><td><span class="code">supplier</span></td><td><span class="opt">Optional</span></td><td>Al-Rashad Contracting</td><td>Supplier / vendor name</td></tr>
+          <tr><td><span class="code">period</span></td><td><span class="opt">Optional</span></td><td>2024-Q1</td><td>Reporting period (e.g. 2024-Q2)</td></tr>
+          <tr><td><span class="code">certificate</span></td><td><span class="opt">Optional</span></td><td>LCGPA-2024-00123</td><td>LCGPA certificate number</td></tr>
+          <tr><td><span class="code">notes</span></td><td><span class="opt">Optional</span></td><td>Verified by auditor</td><td>Free text</td></tr>
+        </tbody>
+      </table>
+      <input type="file" id="file-lcgpa" accept=".csv" onchange="handleFile('lcgpa', this)" style="display:none" />
+      <label class="upload-area" id="drop-lcgpa" for="file-lcgpa" style="cursor:pointer;display:block">
+        <div>&#x1F4C4; Click or drag a CSV file here</div>
+        <p>lcgpa_records.csv — up to 500 rows</p>
+      </label>
+      <div id="preview-lcgpa"></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="import-lcgpa" onclick="importData('lcgpa')" disabled>&#x2705; Import LCGPA Records</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLAIMS -->
+  <div class="section" id="sec-claims">
+    <div class="section-header">
+      <h2>&#x2696;&#xFE0F; Claims</h2>
+      <span class="badge" id="badge-claims">0 records</span>
+      <button class="btn btn-outline btn-sm" onclick="downloadTemplate('claims')">&#x2B07; Download CSV Template</button>
+    </div>
+    <div class="section-body">
+      <div class="tip">
+        <strong>Required:</strong> projectId, title, type, amount, status<br>
+        <strong>Type:</strong> EOT | Loss&amp;Expense | Variation | Disruption | Acceleration | Termination | Other<br>
+        <strong>Status:</strong> draft | submitted | under-review | approved | rejected | settled
+      </div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Required</th><th>Example</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="code">projectId</span></td><td><span class="req">Required</span></td><td>proj_abc123</td><td>Link to project</td></tr>
+          <tr><td><span class="code">title</span></td><td><span class="req">Required</span></td><td>EOT Claim for Storm Delay</td><td>Claim title</td></tr>
+          <tr><td><span class="code">type</span></td><td><span class="req">Required</span></td><td>EOT</td><td>See above</td></tr>
+          <tr><td><span class="code">amount</span></td><td><span class="req">Required</span></td><td>750000</td><td>SAR amount</td></tr>
+          <tr><td><span class="code">status</span></td><td><span class="req">Required</span></td><td>submitted</td><td>See above</td></tr>
+          <tr><td><span class="code">submittedDate</span></td><td><span class="opt">Optional</span></td><td>2024-07-10</td><td>YYYY-MM-DD</td></tr>
+          <tr><td><span class="code">clauze</span></td><td><span class="opt">Optional</span></td><td>FIDIC 20.1</td><td>Applicable contract clause</td></tr>
+          <tr><td><span class="code">claimant</span></td><td><span class="opt">Optional</span></td><td>Saudi Binladin Group</td><td>Party submitting claim</td></tr>
+          <tr><td><span class="code">description</span></td><td><span class="opt">Optional</span></td><td>45-day delay due to...</td><td>Claim narrative</td></tr>
+          <tr><td><span class="code">daysRequested</span></td><td><span class="opt">Optional</span></td><td>45</td><td>Calendar days (EOT only)</td></tr>
+        </tbody>
+      </table>
+      <input type="file" id="file-claims" accept=".csv" onchange="handleFile('claims', this)" style="display:none" />
+      <label class="upload-area" id="drop-claims" for="file-claims" style="cursor:pointer;display:block">
+        <div>&#x1F4C4; Click or drag a CSV file here</div>
+        <p>claims.csv — up to 500 rows</p>
+      </label>
+      <div id="preview-claims"></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="import-claims" onclick="importData('claims')" disabled>&#x2705; Import Claims</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCUMENT FILES -->
+  <div class="section" id="sec-docs">
+    <div class="section-header">
+      <h2>&#x1F4C4; Contract &amp; Project Documents</h2>
+      <span class="badge" id="badge-docs">0 documents</span>
+    </div>
+    <div class="section-body">
+      <div class="tip">
+        <strong>Upload PDF, DOCX, or TXT files</strong> to attach them to projects and contracts.<br>
+        Text is extracted server-side (via /api/parse) and stored for AI cross-document analysis.<br>
+        Import your <strong>Projects</strong> and <strong>Contracts</strong> first so you can link files to them.
+      </div>
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Link to Project</label>
+          <select id="doc-project-sel" onchange="loadDocContracts()">
+            <option value="">&#x2014; No project link &#x2014;</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Link to Contract Document</label>
+          <select id="doc-contract-sel">
+            <option value="__new">+ Auto-create contract record</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Document Type</label>
+          <select id="doc-type-sel">
+            <option value="Contract">Contract</option>
+            <option value="Appendix">Appendix / Schedule</option>
+            <option value="BOQ">BOQ (Bill of Quantities)</option>
+            <option value="Specification">Technical Specification</option>
+            <option value="Claim">Claim Document</option>
+            <option value="Variation">Variation Order</option>
+            <option value="Insurance">Insurance / Bond / Guarantee</option>
+            <option value="Report">Progress Report</option>
+            <option value="Drawing">Drawing / Plan</option>
+            <option value="Correspondence">Correspondence / Letter</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <input type="file" id="file-docs" accept=".pdf,.docx,.txt" multiple onchange="handleDocFiles(this)" style="display:none" />
+      <label class="upload-area multi" id="drop-docs" for="file-docs" style="cursor:pointer;display:block">
+        <div style="font-size:28px">&#x1F4CE;</div>
+        <div style="font-weight:600;margin-top:8px">Click or drag files here</div>
+        <p>PDF / DOCX / TXT &#x2014; multiple files allowed &#x2014; up to 10 MB each</p>
+      </label>
+
+      <div class="doc-queue" id="doc-queue"></div>
+
+      <div class="actions" style="margin-top:16px">
+        <button class="btn btn-primary" id="upload-docs-btn" onclick="uploadAllDocs()" disabled>&#x2B06; Upload &amp; Extract All</button>
+        <button class="btn btn-outline btn-sm" onclick="clearDocQueue()">&#x2715; Clear Queue</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var STATE_KEY = 'mashrooth_crud_v1';
+var parsed = {}; // { entity: [rows] }
+
+// ── CSV templates ────────────────────────────────────────────────────────────
+var TEMPLATES = {
+  projects:  'name,status,budget,startDate,endDate,client,contractor,location,description,localContentTarget,completionPct\nKing Salman Park Phase 2,active,12500000,2024-01-15,2025-06-30,Royal Commission,Saudi Binladin Group,"Riyadh, Saudi Arabia",Infrastructure and landscaping works,40,65',
+  contracts: 'projectId,title,type,status,value,signedDate,expiryDate,parties,retentionPct,notes\n,Main Civil Works Agreement,FIDIC-Red,active,8500000,2024-02-01,2025-12-31,Client; Contractor; Engineer,5,DAB appointed 2024-03',
+  grc:       'title,category,likelihood,impact,status,owner,mitigation,projectId,dueDate,regulation\nDelay in material delivery,Operational,3,4,open,Ahmed Al-Rashidi,Dual-source procurement,,2025-03-01,\nLabor compliance failure,Regulatory,2,5,monitoring,HR Manager,Monthly Nitaqat audits,,2025-06-01,Nitaqat',
+  lcgpa:     'projectId,category,itemName,totalValue,localValue,supplier,period,certificate,notes\n,Labor,Civil engineering manpower,2500000,1800000,Al-Rashad Contracting,2024-Q1,LCGPA-2024-00123,Verified by auditor\n,Materials,Steel reinforcement bars,5000000,2000000,SABIC,2024-Q1,,Local SABIC steel',
+  claims:    'projectId,title,type,amount,status,submittedDate,clauze,claimant,description,daysRequested\n,EOT Claim for Storm Delay,EOT,750000,submitted,2024-07-10,FIDIC 20.1,Saudi Binladin Group,45-day delay due to exceptional weather conditions,45\n,Variation Order 12,Variation,1200000,under-review,2024-08-15,FIDIC 12.4,,Additional underground utilities discovered,'
+};
+
+function downloadTemplate(entity) {
+  var csv = TEMPLATES[entity];
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = entity + '_template.csv';
+  a.click();
+}
+
+// ── CSV parser ────────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(function(l){ return l.trim(); });
+  if (lines.length < 2) return [];
+  var headers = splitCSVLine(lines[0]);
+  var rows = [];
+  for (var i = 1; i < lines.length; i++) {
+    var vals = splitCSVLine(lines[i]);
+    if (vals.every(function(v){ return !v.trim(); })) continue;
+    var obj = {};
+    headers.forEach(function(h, idx){ obj[h.trim()] = (vals[idx] || '').trim(); });
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function splitCSVLine(line) {
+  var result = [], cur = '', inQ = false;
+  for (var i = 0; i < line.length; i++) {
+    var c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur);
+  return result;
+}
+
+// ── File handling ─────────────────────────────────────────────────────────────
+function handleFile(entity, input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var rows = parseCSV(e.target.result);
+    parsed[entity] = rows;
+    showPreview(entity, rows);
+    document.getElementById('import-' + entity).disabled = rows.length === 0;
+    document.getElementById('badge-' + entity).textContent = rows.length + ' rows parsed';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// ── Preview table ─────────────────────────────────────────────────────────────
+function showPreview(entity, rows) {
+  var el = document.getElementById('preview-' + entity);
+  if (!rows.length) { el.innerHTML = '<div class="status err">&#x26A0; No data found in CSV</div>'; return; }
+  var headers = Object.keys(rows[0]);
+  var html = '<div class="preview-table-wrap"><table class="preview-table"><thead><tr>' +
+    headers.map(function(h){ return '<th>' + esc(h) + '</th>'; }).join('') +
+    '</tr></thead><tbody>' +
+    rows.slice(0,50).map(function(row){
+      return '<tr>' + headers.map(function(h){ return '<td title="' + esc(row[h]||'') + '">' + esc(row[h]||'') + '</td>'; }).join('') + '</tr>';
+    }).join('') +
+    '</tbody></table></div>';
+  if (rows.length > 50) html += '<div class="status info">Showing first 50 of ' + rows.length + ' rows</div>';
+  el.innerHTML = html;
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Import to localStorage ────────────────────────────────────────────────────
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STATE_KEY)) || {}; } catch(e) { return {}; }
+}
+function saveState(s) { localStorage.setItem(STATE_KEY, JSON.stringify(s)); }
+
+function uid() { return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+
+function importData(entity) {
+  var rows = parsed[entity];
+  if (!rows || !rows.length) { toast('No data to import'); return; }
+  var state = loadState();
+  state._demo = false;
+
+  if (entity === 'projects') {
+    if (!Array.isArray(state.projects)) state.projects = [];
+    var added = 0;
+    rows.forEach(function(r) {
+      if (!r.name || !r.status) return;
+      var id = 'proj_' + uid();
+      state.projects.push({
+        id: id,
+        name: r.name,
+        status: r.status,
+        budget: parseFloat(r.budget) || 0,
+        startDate: r.startDate || '',
+        endDate: r.endDate || '',
+        client: r.client || '',
+        contractor: r.contractor || '',
+        location: r.location || '',
+        description: r.description || '',
+        localContentTarget: parseFloat(r.localContentTarget) || 0,
+        completionPct: parseFloat(r.completionPct) || 0,
+        createdAt: new Date().toISOString()
+      });
+      added++;
+    });
+    saveState(state);
+    toast('✅ Imported ' + added + ' projects');
+    document.getElementById('badge-projects').textContent = (state.projects.length) + ' records in app';
+    renderProjectIds(state.projects);
+  }
+
+  else if (entity === 'contracts') {
+    if (typeof state.contractDocuments !== 'object') state.contractDocuments = {};
+    var added = 0;
+    rows.forEach(function(r) {
+      if (!r.title || !r.type || !r.status) return;
+      var pid = r.projectId || '__unlinked';
+      if (!state.contractDocuments[pid]) state.contractDocuments[pid] = [];
+      state.contractDocuments[pid].push({
+        id: 'doc_' + uid(),
+        projectId: pid,
+        title: r.title,
+        type: r.type,
+        status: r.status,
+        value: parseFloat(r.value) || 0,
+        signedDate: r.signedDate || '',
+        expiryDate: r.expiryDate || '',
+        parties: r.parties ? r.parties.split(';').map(function(p){ return p.trim(); }) : [],
+        retentionPct: parseFloat(r.retentionPct) || 0,
+        notes: r.notes || '',
+        createdAt: new Date().toISOString()
+      });
+      added++;
+    });
+    saveState(state);
+    toast('✅ Imported ' + added + ' contracts');
+    document.getElementById('badge-contracts').textContent = added + ' records in app';
+  }
+
+  else if (entity === 'grc') {
+    if (!Array.isArray(state.grcRisks)) state.grcRisks = [];
+    var added = 0;
+    rows.forEach(function(r) {
+      if (!r.title || !r.category || !r.status) return;
+      state.grcRisks.push({
+        id: 'risk_' + uid(),
+        title: r.title,
+        category: r.category,
+        likelihood: parseInt(r.likelihood) || 1,
+        impact: parseInt(r.impact) || 1,
+        riskScore: (parseInt(r.likelihood)||1) * (parseInt(r.impact)||1),
+        status: r.status,
+        owner: r.owner || '',
+        mitigation: r.mitigation || '',
+        projectId: r.projectId || '',
+        dueDate: r.dueDate || '',
+        regulation: r.regulation || '',
+        createdAt: new Date().toISOString()
+      });
+      added++;
+    });
+    saveState(state);
+    toast('✅ Imported ' + added + ' GRC risks');
+    document.getElementById('badge-grc').textContent = (state.grcRisks.length) + ' records in app';
+  }
+
+  else if (entity === 'lcgpa') {
+    if (typeof state.lcgpaRecords !== 'object') state.lcgpaRecords = {};
+    var added = 0;
+    rows.forEach(function(r) {
+      if (!r.itemName || !r.category) return;
+      var pid = r.projectId || '__unlinked';
+      if (!state.lcgpaRecords[pid]) state.lcgpaRecords[pid] = [];
+      var tv = parseFloat(r.totalValue) || 0;
+      var lv = parseFloat(r.localValue) || 0;
+      state.lcgpaRecords[pid].push({
+        id: 'lc_' + uid(),
+        projectId: pid,
+        category: r.category,
+        itemName: r.itemName,
+        totalValue: tv,
+        localValue: lv,
+        localContentPct: tv > 0 ? Math.round((lv/tv)*100*10)/10 : 0,
+        supplier: r.supplier || '',
+        period: r.period || '',
+        certificate: r.certificate || '',
+        notes: r.notes || '',
+        createdAt: new Date().toISOString()
+      });
+      added++;
+    });
+    saveState(state);
+    toast('✅ Imported ' + added + ' LCGPA records');
+    document.getElementById('badge-lcgpa').textContent = added + ' records in app';
+  }
+
+  else if (entity === 'claims') {
+    if (!Array.isArray(state.claims)) state.claims = [];
+    var added = 0;
+    rows.forEach(function(r) {
+      if (!r.title || !r.type || !r.status) return;
+      state.claims.push({
+        id: 'claim_' + uid(),
+        projectId: r.projectId || '',
+        title: r.title,
+        type: r.type,
+        amount: parseFloat(r.amount) || 0,
+        status: r.status,
+        submittedDate: r.submittedDate || '',
+        clauze: r.clauze || '',
+        claimant: r.claimant || '',
+        description: r.description || '',
+        daysRequested: parseInt(r.daysRequested) || 0,
+        createdAt: new Date().toISOString()
+      });
+      added++;
+    });
+    saveState(state);
+    toast('✅ Imported ' + added + ' claims');
+    document.getElementById('badge-claims').textContent = (state.claims.length) + ' records in app';
+  }
+}
+
+// ── Show project IDs after import ─────────────────────────────────────────────
+function renderProjectIds(projects) {
+  if (!projects.length) return;
+  var html = '<div class="status ok" style="flex-direction:column;align-items:flex-start;gap:4px;">' +
+    '<strong>&#x2139; Project IDs (use in contracts, LCGPA, claims, GRC):</strong>' +
+    projects.map(function(p){ return '<span><span class="code">' + esc(p.id) + '</span> — ' + esc(p.name) + '</span>'; }).join('') +
+    '</div>';
+  document.getElementById('preview-projects').innerHTML += html;
+}
+
+// ── Clear all ─────────────────────────────────────────────────────────────────
+function clearAll() {
+  if (!confirm('This will permanently delete ALL demo data in this browser (projects, contracts, risks, LCGPA, claims). Proceed?')) return;
+  localStorage.setItem(STATE_KEY, JSON.stringify({
+    _demo: false,
+    projects: [],
+    contractDocuments: {},
+    aiFindings: [],
+    wbsPhases: {},
+    lcgpaRecords: {},
+    claims: [],
+    grcRisks: [],
+    complianceControls: [],
+    procurementItems: [],
+    users: [],
+    documentContents: {},
+    crossDocumentFindings: [],
+    preBidClarifications: [],
+    pipelineSteps: {},
+    contractWorkflowStatus: {}
+  }));
+  toast('✅ All demo data cleared. You can now import your real data.');
+  updateBadges();
+}
+
+// ── Badges ────────────────────────────────────────────────────────────────────
+function updateBadges() {
+  var s = loadState();
+  document.getElementById('badge-projects').textContent = (s.projects||[]).length + ' records';
+  var cd = s.contractDocuments || {};
+  var totalC = Object.values(cd).reduce(function(a,b){ return a + b.length; }, 0);
+  document.getElementById('badge-contracts').textContent = totalC + ' records';
+  document.getElementById('badge-grc').textContent = (s.grcRisks||[]).length + ' records';
+  var lr = s.lcgpaRecords || {};
+  var totalL = Object.values(lr).reduce(function(a,b){ return a + b.length; }, 0);
+  document.getElementById('badge-lcgpa').textContent = totalL + ' records';
+  document.getElementById('badge-claims').textContent = (s.claims||[]).length + ' records';
+  // refresh doc dropdowns to stay in sync
+  if (typeof loadDocProjects === 'function') loadDocProjects();
+}
+
+// ── Drag-and-drop ─────────────────────────────────────────────────────────────
+['projects','contracts','grc','lcgpa','claims'].forEach(function(entity) {
+  var drop = document.getElementById('drop-' + entity);
+  drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.classList.add('drag'); });
+  drop.addEventListener('dragleave', function(){ drop.classList.remove('drag'); });
+  drop.addEventListener('drop', function(e){
+    e.preventDefault(); drop.classList.remove('drag');
+    var file = e.dataTransfer.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      var rows = parseCSV(ev.target.result);
+      parsed[entity] = rows;
+      showPreview(entity, rows);
+      document.getElementById('import-' + entity).disabled = rows.length === 0;
+      document.getElementById('badge-' + entity).textContent = rows.length + ' rows parsed';
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+});
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, 3500);
+}
+
+// ── Document upload ───────────────────────────────────────────────────────────
+var docQueue = []; // [{file, id, status, text, chars}]
+
+function fileIcon(name) {
+  var ext = (name||'').split('.').pop().toLowerCase();
+  return ext === 'pdf' ? '📕' : ext === 'docx' ? '📘' : '📄';
+}
+
+function fmtBytes(b) {
+  return b > 1048576 ? (b/1048576).toFixed(1) + ' MB' : (b/1024).toFixed(0) + ' KB';
+}
+
+function loadDocProjects() {
+  var s = loadState();
+  var sel = document.getElementById('doc-project-sel');
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">&#x2014; No project link &#x2014;</option>';
+  (s.projects||[]).forEach(function(p){
+    var opt = document.createElement('option');
+    opt.value = p.id; opt.textContent = p.name;
+    sel.appendChild(opt);
+  });
+  if (cur) sel.value = cur;
+  loadDocContracts();
+}
+
+function loadDocContracts() {
+  var pid = document.getElementById('doc-project-sel').value;
+  var s = loadState();
+  var sel = document.getElementById('doc-contract-sel');
+  sel.innerHTML = '<option value="__new">+ Auto-create contract record from filename</option>';
+  if (pid) {
+    var docs = (s.contractDocuments || {})[pid] || [];
+    docs.forEach(function(d){
+      var opt = document.createElement('option');
+      opt.value = d.id; opt.textContent = d.title + ' (' + d.type + ')';
+      sel.appendChild(opt);
+    });
+  }
+}
+
+function handleDocFiles(input) {
+  Array.from(input.files).forEach(function(file) {
+    if (docQueue.some(function(q){ return q.file.name === file.name && q.file.size === file.size; })) return;
+    docQueue.push({ file: file, id: 'dq_' + uid(), status: 'pending', text: '', chars: 0 });
+  });
+  input.value = '';
+  renderDocQueue();
+  document.getElementById('upload-docs-btn').disabled = docQueue.length === 0;
+}
+
+function renderDocQueue() {
+  var el = document.getElementById('doc-queue');
+  if (!docQueue.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="doc-queue">' + docQueue.map(function(item, idx) {
+    var tagClass = 'tag-' + item.status;
+    var tagLabel = item.status === 'pending' ? 'Pending' :
+                   item.status === 'processing' ? 'Extracting…' :
+                   item.status === 'done' ? 'Stored (' + (item.chars||0).toLocaleString() + ' chars)' :
+                   'Error: ' + (item.error||'Failed');
+    var cardClass = item.status === 'done' ? 'done' : item.status === 'error' ? 'error' : item.status === 'processing' ? 'processing' : '';
+    return '<div class="doc-card ' + cardClass + '" id="dcard-' + item.id + '">' +
+      '<span class="doc-icon">' + fileIcon(item.file.name) + '</span>' +
+      '<div class="doc-info">' +
+        '<div class="doc-name">' + esc(item.file.name) + '</div>' +
+        '<div class="doc-meta">' + fmtBytes(item.file.size) + ' &nbsp;&bull;&nbsp; ' + item.file.type.split('/').pop().toUpperCase() + '</div>' +
+        '<div class="doc-status"><span class="tag ' + tagClass + '">' + esc(tagLabel) + '</span></div>' +
+        (item.status === 'processing' ? '<div class="progress-bar"><div class="fill" id="pbar-' + item.id + '" style="width:30%"></div></div>' : '') +
+      '</div>' +
+      (item.status !== 'processing' ? '<button class="doc-remove" onclick="removeDoc(' + idx + ')" title="Remove">&#x2715;</button>' : '') +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+function removeDoc(idx) {
+  docQueue.splice(idx, 1);
+  renderDocQueue();
+  document.getElementById('upload-docs-btn').disabled = docQueue.length === 0;
+}
+
+function clearDocQueue() {
+  docQueue = [];
+  renderDocQueue();
+  document.getElementById('upload-docs-btn').disabled = true;
+}
+
+async function uploadAllDocs() {
+  var pid = document.getElementById('doc-project-sel').value || '__unlinked';
+  var contractDocId = document.getElementById('doc-contract-sel').value;
+  var docType = document.getElementById('doc-type-sel').value;
+  var btn = document.getElementById('upload-docs-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Uploading…';
+
+  for (var i = 0; i < docQueue.length; i++) {
+    var item = docQueue[i];
+    if (item.status === 'done') continue;
+
+    item.status = 'processing';
+    renderDocQueue();
+
+    try {
+      var text = '';
+      var file = item.file;
+
+      if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+        text = await file.text();
+      } else {
+        var b64 = await new Promise(function(resolve) {
+          var fr = new FileReader();
+          fr.onload = function(e) { resolve(e.target.result.split(',')[1]); };
+          fr.readAsDataURL(file);
+        });
+        var resp = await fetch('/api/parse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (function(){ try{ var a=JSON.parse(sessionStorage.getItem('mashrooth_auth_v1')||'{}'); return a.token||''; }catch(e){ return ''; } })() },
+          body: JSON.stringify({ content: b64, name: file.name, type: file.type })
+        });
+        var json = await resp.json();
+        if (!resp.ok) throw new Error(json.error || 'Parse failed');
+        text = json.text || '';
+      }
+
+      if (!text.trim()) throw new Error('No text could be extracted — may be a scanned/image PDF');
+
+      // Store in localStorage
+      var state = loadState();
+      state._demo = false;
+      if (!state.documentContents) state.documentContents = {};
+      if (!state.contractDocuments) state.contractDocuments = {};
+
+      // Resolve or create contract doc record
+      var resolvedDocId = contractDocId;
+      if (contractDocId === '__new') {
+        resolvedDocId = 'doc_' + uid();
+        if (!state.contractDocuments[pid]) state.contractDocuments[pid] = [];
+        state.contractDocuments[pid].push({
+          id: resolvedDocId,
+          projectId: pid,
+          title: file.name.replace(/\.[^.]+$/, ''),
+          type: docType,
+          status: 'active',
+          value: 0,
+          signedDate: '',
+          expiryDate: '',
+          parties: [],
+          retentionPct: 0,
+          notes: 'Uploaded via import tool',
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      state.documentContents[resolvedDocId] = text;
+      saveState(state);
+
+      item.status = 'done';
+      item.chars = text.length;
+      item.docId = resolvedDocId;
+
+    } catch(err) {
+      item.status = 'error';
+      item.error = err.message;
+    }
+
+    renderDocQueue();
+  }
+
+  btn.textContent = '⬆ Upload & Extract All';
+  btn.disabled = false;
+  updateDocBadge();
+  toast('✅ Upload complete — check results above');
+}
+
+// drag-drop for docs
+(function() {
+  var drop = document.getElementById('drop-docs');
+  drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.classList.add('drag'); });
+  drop.addEventListener('dragleave', function(){ drop.classList.remove('drag'); });
+  drop.addEventListener('drop', function(e){
+    e.preventDefault(); drop.classList.remove('drag');
+    var files = Array.from(e.dataTransfer.files).filter(function(f){
+      return f.name.match(/\.(pdf|docx|txt)$/i);
+    });
+    files.forEach(function(file) {
+      if (docQueue.some(function(q){ return q.file.name === file.name && q.file.size === file.size; })) return;
+      docQueue.push({ file: file, id: 'dq_' + uid(), status: 'pending', text: '', chars: 0 });
+    });
+    renderDocQueue();
+    document.getElementById('upload-docs-btn').disabled = docQueue.length === 0;
+  });
+})();
+
+function updateDocBadge() {
+  var s = loadState();
+  var count = Object.keys(s.documentContents || {}).length;
+  document.getElementById('badge-docs').textContent = count + ' documents';
+}
+
+updateBadges();
+loadDocProjects();
+updateDocBadge();
+</script>
+</body>
+</html>
