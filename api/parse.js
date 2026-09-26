@@ -1,71 +1,30 @@
-const pdfParse = require('pdf-parse');
-const AdmZip   = require('adm-zip');
-const { verifyToken, setCORS, setSecurityHeaders } = require('./_auth');
-
-// Max base64 content length (~7.5 MB decoded when base64 is 10 MB)
-const MAX_B64_LENGTH = 14_000_000;
-
-async function handler(req, res) {
-  setCORS(req, res, 'POST,OPTIONS');
-  setSecurityHeaders(res);
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
-
-  // ── Auth: require a valid logged-in session ────────────────────────────────
-  const user = await verifyToken(req.headers.authorization);
-  if (!user) return res.status(401).json({ error: 'Authentication required to upload documents' });
-
-  try {
-    const { content, name = '', type = '' } = req.body || {};
-    if (!content || typeof content !== 'string')
-      return res.status(400).json({ error: 'No file content provided' });
-
-    // Pre-validate size before decoding — avoids allocating a huge buffer
-    if (content.length > MAX_B64_LENGTH)
-      return res.status(413).json({ error: 'File too large. Maximum size is 10 MB.' });
-
-    const buffer = Buffer.from(content, 'base64');
-
-    const safeName = String(name).slice(0, 255);
-    const isPDF  = type === 'application/pdf' || safeName.toLowerCase().endsWith('.pdf');
-    const isDOCX = type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                   safeName.toLowerCase().endsWith('.docx');
-
-    let text = '';
-
-    if (isPDF) {
-      const data = await pdfParse(buffer);
-      text = data.text || '';
-    } else if (isDOCX) {
-      const zip    = new AdmZip(buffer);
-      const docXml = zip.readAsText('word/document.xml');
-      text = docXml
-        .replace(/<w:p\b[^>]*>/gi,         '\n')
-        .replace(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi, '$1')
-        .replace(/<[^>]+>/g,               '')
-        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
-        .replace(/[ \t]+/g,  ' ')
-        .replace(/\n{3,}/g,  '\n\n')
-        .trim();
-    } else {
-      // Plain text fallback
-      text = buffer.toString('utf8');
-    }
-
-    if (!text.trim())
-      return res.status(422).json({
-        error: 'Could not extract text. The file may be scanned or image-based. Please copy and paste the text manually.',
-      });
-
-    return res.status(200).json({ text, chars: text.length, name: safeName });
-
-  } catch (_) {
-    return res.status(500).json({ error: 'File could not be processed. Please check the file and try again.' });
-  }
+const { Worker } = require('node:worker_threads');
+const path = require('node:path');
+const { requireAccess, setSecurityHeaders, AccessError } = require('./_auth');
+const { sameOrigin, supabase, objectBody, fail } = require('./_http');
+function parse(content, extension) {
+  return new Promise((resolve,reject)=>{
+    const worker = new Worker(path.join(__dirname,'../lib/parser-worker.cjs'),{workerData:{content,extension},resourceLimits:{maxOldGenerationSizeMb:128,maxYoungGenerationSizeMb:16,stackSizeMb:4}});
+    const timer = setTimeout(()=>{worker.terminate();reject(new AccessError(422,'Document parsing timed out'));},8000);
+    worker.once('message',data=>{clearTimeout(timer);worker.terminate();data.error?reject(new AccessError(data.status,data.error)):resolve(data.text);});
+    worker.once('error',()=>{clearTimeout(timer);worker.terminate();reject(new AccessError(422,'Document could not be parsed safely'));});
+    worker.once('exit',code=>{clearTimeout(timer);if(code!==0)reject(new AccessError(422,'Document parsing stopped'));});
+  });
 }
-
-// Correct way to attach config to a named handler function
-handler.config = { api: { bodyParser: { sizeLimit: '10mb' } } };
-
-module.exports = handler;
+module.exports = async function handler(req,res) {
+  setSecurityHeaders(res);
+  if (req.method!=='POST') return res.status(405).json({error:'Method not allowed'});
+  try {
+    sameOrigin(req);
+    const ctx = await requireAccess(req,true);
+    const {content,name} = objectBody(req,4100000);
+    if (typeof content!=='string' || !content || content.length%4 || !/^[A-Za-z0-9+/]*={0,2}$/.test(content)) throw new AccessError(400,'Invalid base64 file content');
+    if(content.length>4000000) throw new AccessError(413,'Maximum file size is 3 MB');
+    if(typeof name!=='string' || name.length>255) throw new AccessError(400,'A valid filename is required');
+    const extension=name.split('.').pop().toLowerCase();
+    if(!['pdf','docx','txt'].includes(extension)) throw new AccessError(415,'Use PDF, DOCX or plain text');
+    await supabase('/rest/v1/rpc/consume_service_quota',ctx.token,{method:'POST',body:JSON.stringify({service_name:'parse'})});
+    const text=await parse(content,extension);
+    return res.status(200).json({text,chars:text.length,name});
+  } catch(e) {return fail(res,e);}
+};

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111936">
+  <meta name="description" content="Request a Mashrooth workspace for your organization. Discuss a plan and purchase terms before activation.">
+  <title>Sign up for Mashrooth | Workspace purchase request</title>
+  <link rel="icon" href="/logo-icon.png" type="image/png">
+  <link rel="stylesheet" href="/landing.css">
+  <link rel="stylesheet" href="/signup.css">
+  <script src="/signup.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><div class="container header-inner">
+    <a class="brand" href="/" aria-label="Mashrooth home"><span class="brand-mark" aria-hidden="true">م</span><span>Mashrooth<small lang="ar" dir="rtl">مشروط</small></span></a>
+    <div class="header-actions"><button class="lang-toggle" id="language-toggle" type="button" aria-label="Switch to Arabic" aria-pressed="false">العربية</button><a class="header-signin" href="/app">Sign in <span aria-hidden="true">↗</span></a></div>
+  </div></header>
+  <main id="main" class="signup-page">
+    <div class="container signup-layout">
+      <div class="signup-intro">
+        <span class="eyebrow light-eyebrow">START WITH YOUR ORGANIZATION</span>
+        <h1>One place for the work behind every contract.</h1>
+        <p>Tell us about your team. We’ll discuss the right workspace, purchase terms and activation with you before any payment.</p>
+        <div class="signup-timeline" aria-label="Purchase steps">
+          <div><span>01</span><p><strong>Send your request</strong><small>Share your organization and expected team size.</small></p></div>
+          <div><span>02</span><p><strong>Review your proposal</strong><small>Confirm scope, pricing and terms with Mashrooth.</small></p></div>
+          <div><span>03</span><p><strong>Activate your workspace</strong><small>Accounts are provisioned after the purchase is agreed.</small></p></div>
+        </div>
+        <p class="signup-caveat">No card details are collected on this page. Sending a request does not create an account or start a subscription.</p>
+      </div>
+      <section class="signup-card" aria-labelledby="signup-title">
+        <span class="eyebrow">PURCHASE INQUIRY</span>
+        <h2 id="signup-title">Sign up for a workspace</h2>
+        <p class="signup-description">Choose the workspace you’re interested in. We’ll contact you to confirm availability and a quote.</p>
+        <p id="availability" class="availability" role="status" aria-live="polite">Checking purchase request availability…</p>
+        <form id="purchase-form" method="post" action="/api/purchase-requests" novalidate>
+          <fieldset class="plan-choices"><legend>Which workspace fits your team?</legend>
+            <label class="plan-choice"><input type="radio" name="plan" value="team" checked><span><strong>Team workspace</strong><small>For a single organization managing shared project and contract records.</small></span></label>
+            <label class="plan-choice"><input type="radio" name="plan" value="enterprise"><span><strong>Enterprise discussion</strong><small>For larger teams that need a tailored scope and rollout plan.</small></span></label>
+          </fieldset>
+          <div class="form-grid">
+            <label for="contact-name">Your name <span aria-hidden="true">*</span><input id="contact-name" name="contact_name" type="text" autocomplete="name" minlength="2" maxlength="120" required></label>
+            <label for="work-email">Work email <span aria-hidden="true">*</span><input id="work-email" name="work_email" type="email" autocomplete="email" maxlength="254" required></label>
+            <label for="organization-name" class="full">Organization name <span aria-hidden="true">*</span><input id="organization-name" name="organization_name" type="text" autocomplete="organization" minlength="2" maxlength="160" required></label>
+            <label for="seat-range" class="full">Estimated number of users <span aria-hidden="true">*</span><select id="seat-range" name="seat_range" required><option value="" selected disabled>Select a range</option><option value="1-5">1–5 users</option><option value="6-20">6–20 users</option><option value="21-100">21–100 users</option><option value="101+">101+ users</option></select></label>
+          </div>
+          <div class="honeypot" aria-hidden="true"><label for="website">Website</label><input id="website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+          <label class="consent"><input type="checkbox" name="contact_consent" required><span>I agree to be contacted about this workspace purchase request. Do not include confidential project or contract details.</span></label>
+          <p class="privacy-summary">We use your details only to discuss this request. The inquiry database is in Japan; application requests may be processed in India. <a href="/purchase-privacy">How we handle your inquiry</a></p>
+          <button class="button button-bright submit-button" type="submit" disabled>Request purchase options <span aria-hidden="true">↗</span></button>
+          <p id="form-status" class="form-status" role="status" aria-live="polite"></p>
+          <p class="form-footnote">No payment is taken now. Pricing, billing and access will be confirmed separately. Already have an account? <a href="/app">Sign in</a>.</p>
+        </form>
+      </section>
+    </div>
+  </main>
+  <footer class="footer"><div class="container footer-inner"><a class="brand footer-brand" href="/"><span class="brand-mark" aria-hidden="true">م</span><span>Mashrooth<small lang="ar" dir="rtl">مشروط</small></span></a><span>Projects, contracts and obligations in view.</span><span>© 2026 Mashrooth</span></div></footer>
+</body>
+</html>
