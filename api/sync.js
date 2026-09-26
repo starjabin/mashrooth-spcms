@@ -8,12 +8,10 @@
  * Blob (org_data): wbsPhases, pipelineSteps, contractWorkflowStatus, aiFindings,
  *                  complianceControls, crossDocumentFindings, preBidClarifications
  */
-const { verifyToken, setCORS, setSecurityHeaders } = require('./_auth');
+const { requireAccess, setCORS, setSecurityHeaders } = require('./_auth');
 
 const SUPABASE_URL     = process.env.SUPABASE_URL;
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-  || process.env.SUPABASE_SERVICE_KEY
-  || process.env.SUPABASE_SECRET_KEY;
+const ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
 // Keys kept in the org_data JSON blob (complex nested structures)
 const BLOB_KEYS = [
@@ -24,28 +22,30 @@ const BLOB_KEYS = [
 
 // ── Supabase REST helpers ─────────────────────────────────────────────────────
 
-function hdrs(extra) {
+function hdrs(ctx, extra) {
   return Object.assign({
     'Content-Type': 'application/json',
-    apikey: SERVICE_ROLE_KEY,
-    Authorization: 'Bearer ' + SERVICE_ROLE_KEY,
+    apikey: ANON_KEY,
+    Authorization: 'Bearer ' + ctx.token,
   }, extra || {});
 }
 
-async function sbGet(path) {
-  const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, { headers: hdrs() });
-  if (!r.ok) throw new Error('GET ' + path + ' [' + r.status + ']: ' + await r.text());
+async function sbGet(path, ctx) {
+  path += (path.includes('?') ? '&' : '?') + 'organization_id=eq.' + ctx.organizationId;
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, { headers: hdrs(ctx), signal: AbortSignal.timeout(10000) });
+  if (!r.ok) throw new Error('Database read failed');
   return r.json();
 }
 
-async function sbUpsert(table, rows) {
+async function sbUpsert(table, rows, ctx) {
   if (!rows || !rows.length) return;
-  const r = await fetch(SUPABASE_URL + '/rest/v1/' + table, {
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?on_conflict=organization_id,id', {
     method: 'POST',
-    headers: hdrs({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
-    body: JSON.stringify(rows),
+    headers: hdrs(ctx, { Prefer: 'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify(rows.map(row => ({ ...row, organization_id: ctx.organizationId }))),
+    signal: AbortSignal.timeout(10000),
   });
-  if (!r.ok) throw new Error('UPSERT ' + table + ' [' + r.status + ']: ' + await r.text());
+  if (!r.ok) throw new Error('Database write failed');
 }
 
 // ── Row mappers ───────────────────────────────────────────────────────────────
@@ -186,26 +186,26 @@ function rowToClaim(r) {
 
 // ── Blob helpers ──────────────────────────────────────────────────────────────
 
-async function getBlob() {
-  var rows = await sbGet('org_data?id=eq.main&select=data').catch(function() { return []; });
+async function getBlob(ctx) {
+  var rows = await sbGet('org_data?id=eq.main&select=data', ctx);
   return (rows[0] && rows[0].data) ? rows[0].data : {};
 }
 
-async function upsertBlob(data) {
-  await sbUpsert('org_data', [{ id: 'main', data: data, updated_at: new Date().toISOString() }]);
+async function upsertBlob(data, ctx) {
+  await sbUpsert('org_data', [{ id: 'main', data: data, updated_at: new Date().toISOString() }], ctx);
 }
 
 // ── GET — assemble all tables into one response object ───────────────────────
 
-async function handleGet() {
+async function handleGet(ctx) {
   var results = await Promise.all([
-    sbGet('projects?select=*&order=created_at').catch(function() { return []; }),
-    sbGet('contracts?select=*&order=created_at').catch(function() { return []; }),
-    sbGet('grc_risks?select=*&order=created_at').catch(function() { return []; }),
-    sbGet('lcgpa_records?select=*&order=created_at').catch(function() { return []; }),
-    sbGet('claims?select=*&order=created_at').catch(function() { return []; }),
-    sbGet('document_contents?select=*&order=created_at').catch(function() { return []; }),
-    getBlob(),
+    sbGet('projects?select=*&order=created_at', ctx),
+    sbGet('contracts?select=*&order=created_at', ctx),
+    sbGet('grc_risks?select=*&order=created_at', ctx),
+    sbGet('lcgpa_records?select=*&order=created_at', ctx),
+    sbGet('claims?select=*&order=created_at', ctx),
+    sbGet('document_contents?select=*&order=created_at', ctx),
+    getBlob(ctx),
   ]);
 
   var projects   = results[0];
@@ -258,7 +258,7 @@ async function handleGet() {
 
 // ── POST — upsert each entity to its table ───────────────────────────────────
 
-async function handlePost(incoming) {
+async function handlePost(incoming, ctx) {
   var now = new Date().toISOString();
   var ops = [];
 
@@ -267,7 +267,7 @@ async function handlePost(incoming) {
     var projRows = incoming.projects
       .filter(function(p) { return p && p.id && p.name; })
       .map(projToRow);
-    ops.push(sbUpsert('projects', projRows));
+    ops.push(sbUpsert('projects', projRows, ctx));
   }
 
   // contractDocuments — { projectId: [doc, ...] }
@@ -281,7 +281,7 @@ async function handlePost(incoming) {
           contractRows.push(contractToRow(Object.assign({}, doc, { projectId: pid })));
       });
     });
-    ops.push(sbUpsert('contracts', contractRows));
+    ops.push(sbUpsert('contracts', contractRows, ctx));
   }
 
   // grcRisks — flat array
@@ -289,7 +289,7 @@ async function handlePost(incoming) {
     var riskRows = incoming.grcRisks
       .filter(function(r) { return r && r.id && r.title; })
       .map(riskToRow);
-    ops.push(sbUpsert('grc_risks', riskRows));
+    ops.push(sbUpsert('grc_risks', riskRows, ctx));
   }
 
   // lcgpaRecords — { projectId: [record, ...] }
@@ -302,7 +302,7 @@ async function handlePost(incoming) {
         if (item && item.id && item.itemName) lcRows.push(lcToRow(item, pid));
       });
     });
-    ops.push(sbUpsert('lcgpa_records', lcRows));
+    ops.push(sbUpsert('lcgpa_records', lcRows, ctx));
   }
 
   // claims — flat array
@@ -310,7 +310,7 @@ async function handlePost(incoming) {
     var claimRows = incoming.claims
       .filter(function(c) { return c && c.id && c.title; })
       .map(claimToRow);
-    ops.push(sbUpsert('claims', claimRows));
+    ops.push(sbUpsert('claims', claimRows, ctx));
   }
 
   // documentContents — { docId: text }
@@ -321,7 +321,7 @@ async function handlePost(incoming) {
       if (id && content && typeof content === 'string')
         docRows.push({ id: id, content: content, updated_at: now });
     });
-    ops.push(sbUpsert('document_contents', docRows));
+    ops.push(sbUpsert('document_contents', docRows, ctx));
   }
 
   // Blob keys — merge into org_data
@@ -331,8 +331,8 @@ async function handlePost(incoming) {
   });
   if (Object.keys(blobUpdate).length) {
     ops.push(
-      getBlob().then(function(existing) {
-        return upsertBlob(Object.assign({}, existing, blobUpdate));
+      getBlob(ctx).then(function(existing) {
+        return upsertBlob(Object.assign({}, existing, blobUpdate), ctx);
       })
     );
   }
@@ -348,26 +348,23 @@ module.exports = async function handler(req, res) {
   setSecurityHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  if (!SERVICE_ROLE_KEY)
-    return res.status(503).json({ error: 'Cloud sync not configured — add SUPABASE_SERVICE_KEY env var' });
-
-  var user = await verifyToken(req.headers.authorization);
-  if (!user) return res.status(401).json({ error: 'Authentication required' });
+  if (!SUPABASE_URL || !ANON_KEY)
+    return res.status(503).json({ error: 'Cloud sync is not configured' });
+  if (!['GET', 'POST'].includes(req.method)) return res.status(405).json({ error: 'Method not allowed' });
 
   try {
+    const ctx = await requireAccess(req, req.method === 'POST');
     if (req.method === 'GET') {
-      var data = await handleGet();
+      var data = await handleGet(ctx);
       return res.status(200).json({ data: data });
     }
 
     if (req.method === 'POST') {
-      var synced = await handlePost(req.body || {});
-      return res.status(200).json({ ok: true, synced: synced });
+      return res.status(410).json({ error: 'Legacy bulk saving is retired. Reload the application to use versioned record operations.' });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
-    console.error('[sync]', err.message);
-    return res.status(500).json({ error: err.message || 'Sync failed' });
+    return res.status(err.status || 502).json({ error: err.status ? err.message : 'Sync failed; cloud data was not confirmed' });
   }
 };

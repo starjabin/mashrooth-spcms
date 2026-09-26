@@ -30,3 +30,9 @@ npm-debug.log*
 .claude/
 .mcp.json
 *.duckdb
+
+# Reproducible staging output and environment templates
+dist/
+coverage/
+.env.*
+!.env.example

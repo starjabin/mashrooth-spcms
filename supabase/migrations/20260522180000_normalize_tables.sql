@@ -21,15 +21,7 @@ CREATE TABLE IF NOT EXISTS grc_risks (
   updated_at  TIMESTAMPTZ          DEFAULT NOW()
 );
 ALTER TABLE grc_risks ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'grc_risks' AND policyname = 'grc_risks_all'
-  ) THEN
-    CREATE POLICY grc_risks_all ON grc_risks FOR ALL
-      USING (auth.role() = 'authenticated')
-      WITH CHECK (auth.role() = 'authenticated');
-  END IF;
-END $$;
+-- Default deny until tenant-isolation migration is applied.
 
 -- ── lcgpa_records ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS lcgpa_records (
@@ -48,15 +40,7 @@ CREATE TABLE IF NOT EXISTS lcgpa_records (
   updated_at         TIMESTAMPTZ          DEFAULT NOW()
 );
 ALTER TABLE lcgpa_records ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'lcgpa_records' AND policyname = 'lcgpa_records_all'
-  ) THEN
-    CREATE POLICY lcgpa_records_all ON lcgpa_records FOR ALL
-      USING (auth.role() = 'authenticated')
-      WITH CHECK (auth.role() = 'authenticated');
-  END IF;
-END $$;
+-- Default deny until tenant-isolation migration is applied.
 
 -- ── claims ────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS claims (
@@ -75,15 +59,7 @@ CREATE TABLE IF NOT EXISTS claims (
   updated_at      TIMESTAMPTZ          DEFAULT NOW()
 );
 ALTER TABLE claims ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'claims' AND policyname = 'claims_all'
-  ) THEN
-    CREATE POLICY claims_all ON claims FOR ALL
-      USING (auth.role() = 'authenticated')
-      WITH CHECK (auth.role() = 'authenticated');
-  END IF;
-END $$;
+-- Default deny until tenant-isolation migration is applied.
 
 -- ── document_contents ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS document_contents (
@@ -93,23 +69,7 @@ CREATE TABLE IF NOT EXISTS document_contents (
   updated_at  TIMESTAMPTZ          DEFAULT NOW()
 );
 ALTER TABLE document_contents ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'document_contents' AND policyname = 'document_contents_all'
-  ) THEN
-    CREATE POLICY document_contents_all ON document_contents FOR ALL
-      USING (auth.role() = 'authenticated')
-      WITH CHECK (auth.role() = 'authenticated');
-  END IF;
-END $$;
+-- Default deny until tenant-isolation migration is applied.
 
--- ── Trim org_data blob — remove keys now handled by normalized tables ─────────
-UPDATE org_data
-SET data = data
-  - 'projects'
-  - 'contractDocuments'
-  - 'grcRisks'
-  - 'lcgpaRecords'
-  - 'claims'
-  - 'documentContents'
-WHERE id = 'main';
+-- Existing org_data is retained. Do not remove legacy keys until their
+-- normalized records, ownership and backup have been verified.

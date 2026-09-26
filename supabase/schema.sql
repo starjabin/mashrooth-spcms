@@ -1,6 +1,6 @@
 -- ============================================================
 -- Mashrooth SPCMS — Supabase Schema (full, idempotent)
--- Run this in the Supabase SQL Editor — safe to re-run.
+-- Fresh base schema only. Then apply migrations in order; do not expose tables before tenant isolation.
 -- ============================================================
 
 -- ── 1. org_data — misc blob for complex structures not yet normalized ─────────
@@ -10,9 +10,9 @@ CREATE TABLE IF NOT EXISTS org_data (
   updated_at  TIMESTAMPTZ NOT NULL    DEFAULT NOW()
 );
 ALTER TABLE org_data ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "org_data_select" ON org_data FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY IF NOT EXISTS "org_data_insert" ON org_data FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY IF NOT EXISTS "org_data_update" ON org_data FOR UPDATE USING (auth.role() = 'authenticated');
+-- Default deny. Apply the tenant-isolation migration before allowing access.
+-- Default deny. Apply the tenant-isolation migration before allowing access.
+-- Default deny. Apply the tenant-isolation migration before allowing access.
 
 -- ── 2. projects ───────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS projects (
@@ -32,8 +32,7 @@ CREATE TABLE IF NOT EXISTS projects (
   updated_at            TIMESTAMPTZ          DEFAULT NOW()
 );
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "projects_all" ON projects FOR ALL
-  USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+-- Default deny. Apply the tenant-isolation migration before allowing access.
 
 -- ── 3. contracts ──────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS contracts (
@@ -53,8 +52,7 @@ CREATE TABLE IF NOT EXISTS contracts (
   updated_at      TIMESTAMPTZ          DEFAULT NOW()
 );
 ALTER TABLE contracts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "contracts_all" ON contracts FOR ALL
-  USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+-- Default deny. Apply the tenant-isolation migration before allowing access.
 
 -- ── 4. grc_risks ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS grc_risks (
@@ -74,8 +72,7 @@ CREATE TABLE IF NOT EXISTS grc_risks (
   updated_at  TIMESTAMPTZ          DEFAULT NOW()
 );
 ALTER TABLE grc_risks ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "grc_risks_all" ON grc_risks FOR ALL
-  USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+-- Default deny. Apply the tenant-isolation migration before allowing access.
 
 -- ── 5. lcgpa_records ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS lcgpa_records (
@@ -94,8 +91,7 @@ CREATE TABLE IF NOT EXISTS lcgpa_records (
   updated_at         TIMESTAMPTZ          DEFAULT NOW()
 );
 ALTER TABLE lcgpa_records ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "lcgpa_records_all" ON lcgpa_records FOR ALL
-  USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+-- Default deny. Apply the tenant-isolation migration before allowing access.
 
 -- ── 6. claims ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS claims (
@@ -114,8 +110,7 @@ CREATE TABLE IF NOT EXISTS claims (
   updated_at      TIMESTAMPTZ          DEFAULT NOW()
 );
 ALTER TABLE claims ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "claims_all" ON claims FOR ALL
-  USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+-- Default deny. Apply the tenant-isolation migration before allowing access.
 
 -- ── 7. document_contents ──────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS document_contents (
@@ -125,8 +120,7 @@ CREATE TABLE IF NOT EXISTS document_contents (
   updated_at  TIMESTAMPTZ          DEFAULT NOW()
 );
 ALTER TABLE document_contents ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "document_contents_all" ON document_contents FOR ALL
-  USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+-- Default deny. Apply the tenant-isolation migration before allowing access.
 
 -- ── 8. Seed org_data with empty blob (idempotent) ─────────────────────────────
 INSERT INTO org_data (id, data)

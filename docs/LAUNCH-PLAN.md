@@ -1,0 +1,43 @@
+# Mashrooth launch plan
+
+This is the release checklist for `mashrooth.com`. The present build is a private pilot. A production launch requires each gate below to have an owner, evidence and a rollback procedure. Projected sales are business targets, not a software guarantee.
+
+## 1. Public claims and domain
+
+- Use the new public `web/index.html` and the workspace at `/app`. The legacy root page was removed because it advertised unverified ratings, availability, integrations and legal/compliance results.
+- Suspend the existing `mashrooth.fresme.com` page at its actual host or replace its copy. It currently says SCCC/Riyadh residency, self-hosted Qwen, automated bank guarantees and regulator integrations, 14-day free trials and customer outcomes. None are substantiated by this release. Source changes alone cannot change an independently hosted live page.
+- Verify control of `mashrooth.com`, existing mail MX/SPF/DKIM/DMARC, and current DNS before modifying records. Attach the apex and optionally `www` to the actual Vercel project, copy the exact DNS records returned by Vercel, confirm HTTPS and a single canonical redirect. Never replace MX records during website cutover.
+- Vercel's domain availability lookup returned `mashrooth.com` as available on 26 September 2026. Treat this as an unverified purchase opportunity, not proof of ownership or a reservation; confirm at the registrar and register it in the owner's account before DNS work.
+- Publish accurate privacy terms, processor/retention details and customer support contacts before accepting public customer data. Review statements about FIDIC, regulators, Saudi data location and financial returns with qualified owners.
+
+## 2. Hosting and capacity
+
+- Proposed application tier: Vercel Pro with Fluid Compute for stateless Node API functions and a global CDN for static assets. Use an owned project with team access, cost alerts, firewall/bot controls, preview deployment protection, logs and a rollback owner. This scales application requests; capacity is not unlimited.
+- The public HTML and static assets use Vercel's default static delivery; the API sets `Cache-Control: no-store` on user data. A global `no-store` header was removed so it cannot disable static CDN caching for every visitor.
+- The current `vercel.json` pins API compute to `hnd1` because the only connected database is in AWS `ap-northeast-1` (Tokyo). This minimizes API-to-database round trips *for that database*. Before a different production database is used, update `regions` to the matching or nearest supported compute region, deploy a preview, and measure latency from Saudi client networks. Do not treat an edge/CDN location as evidence of data residency.
+- Proposed database tier: a separately owned paid Supabase project with measured compute size, per-query latency, connection usage, indexes and monitored backups. Do not promise an arbitrary requests-per-second figure. Size using p95 and p99 timings, realistic concurrent users, representative tenant data, load tests and cost ceilings. Upgrade compute before saturation; reserve connections for Auth/PostgREST. Heavy OCR/large document pipelines need a separate durable worker and storage design.
+- Define acceptance targets with initial customers before sale (suggested starting targets: p95 reads < 800 ms, p95 writes < 1.5 s, error rate < 0.5% at tested peak, with the test region and load recorded). Adjust from measured application and database behavior rather than marketing statements.
+
+## 3. Database and security
+
+- Inspect real schemas, row ownership and migrations; recover the paused database only after confirming its role, backups and exposure. Create separate staging and production projects. Apply the reviewed base schema and migrations to staging first. Backfill each legacy row to a verified organization; test restore before production changes.
+- Run Supabase security/performance advisors. Test membership revocation, role boundaries, concurrent writes and isolation for two organizations using real Supabase JWTs, plus RLS access through the Data API. Configure confirmation and recovery email through owned SMTP, MFA policy, session lifetime and abuse protection.
+- Review AI data flow and provider terms. AI remains disabled until provider, processing location and customer approval are recorded. Do not feed sensitive contracts to an unapproved external model.
+
+## 4. Commercial SaaS features
+
+- Add a verified organization signup/invitation/offboarding lifecycle with single-tenant bootstrap, limited trials and abuse controls. Existing operator provisioning is suitable only for a controlled pilot.
+- Select and contract a payment provider suitable for SAR invoicing and tax handling. Implement hosted checkout, authenticated idempotent webhooks, subscription state/entitlement checks enforced on the server and database, renewal/failure/cancellation flows, invoices and refunds. Do not mark billing active on the basis of a pricing page.
+- Add actual storage/scanning/OCR, notification delivery with retries, complete exports/deletion requests, support administration and incident handling. Integrate government and bank APIs only after formal access, documented specifications and test credentials. Avoid simulated actions represented as live integrations.
+- Run a customer pilot for Arabic/English, accessibility and mobile usage. Record feedback, support volume and task completion. Publish prices, feature limits and SLAs only after the capabilities and costs have been measured.
+
+## 5. Deployment sequence and evidence
+
+1. Publish the reviewed branch and pass CI. Preserve an immutable commit for every release.
+2. Obtain access to the actual Vercel project and domain registrar. Configure staging variables and deploy a protected preview.
+3. Migrate a separate staging database and provision users from two organizations. Pass integration, security, browser and representative load tests.
+4. Review processor agreements, support terms, incident contacts and privacy copy. Approve measured pricing and entitlement rules.
+5. Back up production, apply verified migrations, deploy the tested artifact, attach the owned domain and run `npm run verify:deployment -- https://mashrooth.com` plus authenticated end-to-end checks.
+6. Watch error/latency/cost dashboards during a limited pilot. Record a restore rehearsal, rollback conditions and the person responsible before opening public sales.
+
+**Current external blockers:** GitHub push authentication is unavailable in this workspace; connected Vercel authorization does not include the team owning the existing project; the connected Supabase project is inactive. Neither live DNS control nor hosting of the separate `mashrooth.fresme.com` marketing page is connected here. No production migration, paid customer onboarding or domain cutover is claimed.

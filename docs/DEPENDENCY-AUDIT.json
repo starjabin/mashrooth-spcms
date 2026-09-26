@@ -1,0 +1,14 @@
+{
+  "command": "npm audit --omit=dev --json",
+  "checked_on": "2026-09-24",
+  "exit_code": 0,
+  "result": {
+    "auditReportVersion": 2,
+    "vulnerabilities": {},
+    "metadata": {
+      "vulnerabilities": {"info": 0, "low": 0, "moderate": 0, "high": 0, "critical": 0, "total": 0},
+      "dependencies": {"prod": 4, "dev": 1, "optional": 0, "peer": 0, "peerOptional": 0, "total": 4}
+    }
+  },
+  "limitations": "Registry advisory matching for production dependencies only. Not a penetration test or proof that bundled parser code has no vulnerabilities."
+}

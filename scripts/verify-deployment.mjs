@@ -1,0 +1,22 @@
+// Read-only checks. A zero exit code is not a production security/compliance certification.
+import { lookup } from 'node:dns/promises';
+const target=process.argv[2]||process.env.DEPLOYMENT_URL;
+if(!target){console.error('Usage: npm run verify:deployment -- https://your-deployment.example');process.exit(1);}
+const base=new URL(target);
+if(!['https:','http:'].includes(base.protocol)||base.username||base.password)throw new Error('Supply an HTTP(S) application URL without credentials');
+let failed=0;
+async function check(name,fn){try{await fn();console.log('PASS '+name);}catch(e){failed++;console.error('FAIL '+name+': '+e.message);}}
+function assert(value,message){if(!value)throw new Error(message);}
+const request=p=>fetch(new URL(p,base),{redirect:'error',signal:AbortSignal.timeout(15000)});
+await check('DNS resolves',()=>lookup(base.hostname));
+await check('HTTPS',async()=>assert(base.protocol==='https:'||['localhost','127.0.0.1'].includes(base.hostname),'Use HTTPS for deployed environments'));
+await check('Public page and security headers',async()=>{const r=await request('/');assert(r.ok,'HTTP '+r.status);assert(r.headers.get('content-type')?.includes('text/html'),'Expected HTML');assert(r.headers.get('content-security-policy')?.includes("script-src 'self'"),'Missing script policy');const html=await r.text();assert(html.includes('Private pilot'),'Expected current public page');assert(!/SCCC|PDPL-resident|self-hosted in Riyadh|14-day free trial/i.test(html),'Unsupported public claims remain');});
+await check('Application login page',async()=>{const r=await request('/app');assert(r.ok,'HTTP '+r.status);assert((await r.text()).includes('/app.js'),'Expected maintained application');});
+await check('JavaScript asset',async()=>{const r=await request('/app.js');assert(r.ok&&r.headers.get('content-type')?.includes('javascript'),'Asset route must return JavaScript');});
+await check('Database migration readiness',async()=>{const r=await request('/api/health');const h=await r.json();assert(r.ok&&h.ready,'Database/configuration is not ready');console.log('Features: '+JSON.stringify(h.features)+'; AI: '+h.services?.ai);});
+await check('Anonymous record access rejected',async()=>{const r=await request('/api/records?collection=projects');assert(r.status===401,'Expected 401; received '+r.status);});
+await check('Anonymous member access rejected',async()=>{const r=await request('/api/admin/users');assert(r.status===401,'Expected 401; received '+r.status);});
+if(process.env.TEST_ACCESS_TOKEN){
+  await check('Authenticated workspace read',async()=>{const r=await fetch(new URL('/api/records?collection=projects',base),{headers:{Authorization:'Bearer '+process.env.TEST_ACCESS_TOKEN},signal:AbortSignal.timeout(15000)});const data=await r.json();assert(r.ok&&Array.isArray(data.data),'Authenticated read failed');});
+}else console.log('NOT TESTED: login, session refresh, two-tenant access, CRUD, parsing, AI, backup restore and provider regions require authenticated live acceptance testing.');
+process.exitCode=failed?1:0;
