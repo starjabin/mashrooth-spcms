@@ -28,15 +28,16 @@ const arabic = {
   'Workspace': 'مساحة العمل',
   'How it works': 'كيف يعمل',
   'Foundation': 'الأساس',
-  'Pilot access': 'الدخول التجريبي',
+  'Purchase': 'الشراء',
   'Sign in': 'تسجيل الدخول',
+  'Get access': 'اطلب الوصول',
   'PROJECTS · CONTRACTS · OBLIGATIONS': 'المشاريع · العقود · الالتزامات',
   'The work behind a contract,': 'كل ما يتعلق بالعقد،',
   'all in view.': 'أمامك بوضوح.',
   'Bring project records, claims and key dates into one place. Help your team see what needs attention, who is responsible, and what changed.': 'اجمع سجلات المشاريع والمطالبات والمواعيد المهمة في مكان واحد. ساعد فريقك على معرفة ما يحتاج إلى متابعة، ومن المسؤول عنه، وما الذي تغيّر.',
-  'Open workspace': 'افتح مساحة العمل',
+  'Request a workspace': 'اطلب مساحة عمل',
   'Explore the workspace': 'استكشف مساحة العمل',
-  'Private pilot · Accounts are provided by an administrator': 'تجربة خاصة · يجهّز المسؤول حسابات الدخول',
+  'Private pilot · Purchase requests are reviewed before activation': 'تجربة خاصة · تُراجع طلبات الشراء قبل تفعيل الحسابات',
   'ILLUSTRATION': 'تصوّر توضيحي',
   'WORKSPACE / OVERVIEW': 'مساحة العمل / نظرة عامة',
   'YOUR WORKSPACE': 'مساحة عملك',
@@ -106,8 +107,7 @@ const arabic = {
   'AI analysis is optional and disabled until data processing is approved. Hosting location and compliance certifications are not represented as verified.': 'التحليل بالذكاء الاصطناعي اختياري ومعطّل حتى الموافقة على معالجة البيانات. لا نقدّم موقع الاستضافة أو شهادات الامتثال على أنها معتمدة.',
   'PRIVATE PILOT': 'تجربة خاصة',
   'Ready to see your work in one place?': 'هل أنت مستعد لرؤية عملك في مكان واحد؟',
-  'If your organization has a provisioned account, you can sign in to the workspace. Public signup and subscriptions are not available during the pilot.': 'إذا جهّزت مؤسستك حساباً لك، يمكنك الدخول إلى مساحة العمل. التسجيل العام والاشتراكات غير متاحين خلال التجربة.',
-  'Go to sign in': 'الانتقال إلى الدخول',
+  'Request a workspace for your organization. We’ll discuss your plan, pricing and activation before any payment. Already have an account?': 'اطلب مساحة عمل لمؤسستك. سنناقش الخطة والسعر والتفعيل قبل أي دفعة. هل لديك حساب؟',
   'Projects, contracts and obligations in view.': 'المشاريع والعقود والالتزامات أمامك بوضوح.'
 };
 
@@ -135,4 +135,6 @@ languageButton.addEventListener('click', () => {
   document.querySelector('.preview-tabs').setAttribute('aria-label', isArabic ? 'أقسام مساحة العمل التوضيحية' : 'Workspace preview areas');
   document.querySelector('.showcase').setAttribute('aria-label', isArabic ? 'تصوّر توضيحي لمساحة العمل' : 'Illustrative workspace preview');
   document.querySelector('.overview-steps').setAttribute('aria-label', isArabic ? 'أقسام مساحة العمل' : 'Workspace areas');
+  try { sessionStorage.setItem('mashrooth-language', isArabic ? 'ar' : 'en'); } catch { /* Storage is optional. */ }
 });
+try { if (sessionStorage.getItem('mashrooth-language') === 'ar') languageButton.click(); } catch { /* Storage is optional. */ }

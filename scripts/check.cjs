@@ -6,7 +6,9 @@ for(const file of [...walk('api'),...walk('lib'),...walk('scripts')].filter(x=>/
   const result=spawnSync(process.execPath,['--check',file],{stdio:'inherit'});
   if(result.status!==0)process.exit(result.status||1);
 }
-const frontend=spawnSync(process.execPath,['--input-type=module','--check'],{input:fs.readFileSync('web/app.js','utf8'),encoding:'utf8'});
-if(frontend.status!==0){console.error(frontend.stderr);process.exit(1);}
+for(const file of ['web/app.js','web/landing.js','web/signup.js']){
+  const frontend=spawnSync(process.execPath,['--input-type=module','--check'],{input:fs.readFileSync(file,'utf8'),encoding:'utf8'});
+  if(frontend.status!==0){console.error(frontend.stderr);process.exit(1);}
+}
 JSON.parse(fs.readFileSync('web/schema.json','utf8'));
 console.log('JavaScript syntax checks passed.');

@@ -13,6 +13,14 @@
   },
   "rewrites": [
     {
+      "source": "/signup",
+      "destination": "/signup.html"
+    },
+    {
+      "source": "/signup/",
+      "destination": "/signup.html"
+    },
+    {
       "source": "/app",
       "destination": "/app.html"
     },

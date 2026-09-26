@@ -34,6 +34,8 @@ a:focus-visible, button:focus-visible { outline: 3px solid #65daca; outline-offs
 .header-signin:hover { background: rgba(125,226,214,.12); }
 .header-signin span { margin-left: 8px; color: var(--aqua); }
 .header-actions { display: flex; align-items: center; gap: 12px; }
+.header-join { padding: 11px 14px; border-radius: 9px; background: #69d8d1; color: #0e2c3a; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.header-join:hover { background: #90e9df; }
 .lang-toggle { padding: 9px 10px; border: 0; border-radius: 7px; background: transparent; color: #a0e6df; cursor: pointer; font-size: 13px; font-weight: 700; white-space: nowrap; }
 .lang-toggle:hover { background: rgba(125,226,214,.12); }
 .hero { position: relative; overflow: hidden; background: radial-gradient(ellipse at 75% 25%,#233769 0%,transparent 44%),linear-gradient(135deg,#111936 0%,#101a3d 65%,#0d263f 100%); color: white; }
@@ -138,6 +140,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid #65daca; outline-offs
 .access-inner > div { max-width: 730px; }
 .access h2 { font-size: clamp(35px,3.6vw,50px); }
 .access p { max-width: 620px; margin: 20px 0 0; color: #c8d3df; font-size: 16px; line-height: 1.75; }
+.access p a { color: #8de4dd; text-decoration: underline; text-underline-offset: 3px; }
 .access .button { white-space: nowrap; }
 .footer { background: #0d1631; color: #9caec2; }
 .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 110px; font-size: 12px; }
@@ -180,6 +183,8 @@ a:focus-visible, button:focus-visible { outline: 3px solid #65daca; outline-offs
   .header-signin { padding: 10px; }
   .header-signin span { display: none; }
   .header-actions { gap: 2px; }
+  .marketing-actions .header-signin { display: none; }
+  .header-join { padding: 10px 9px; font-size: 12px; }
   .brand small { display: none; }
   .lang-toggle { padding: 9px 5px; font-size: 12px; }
   .eyebrow { font-size: 9px; letter-spacing: 1.5px; }
