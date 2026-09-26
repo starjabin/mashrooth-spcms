@@ -9,6 +9,8 @@ test('local server serves real assets, protects source files and reports missing
   const base='http://127.0.0.1:'+port;
   const home=await fetch(base);assert.equal(home.status,200);assert.match(home.headers.get('content-security-policy'),/script-src 'self'/);
   const landing=await home.text();assert.match(landing,/Private pilot/);assert.doesNotMatch(landing,/SCCC|PDPL-resident|self-hosted in Riyadh|14-day free trial/i);
+  assert.match(landing,/src="\/landing.js"/);
+  const landingJs=await fetch(base+'/landing.js');assert.equal(landingJs.status,200);assert.match(landingJs.headers.get('content-type'),/javascript/);
   const app=await fetch(base+'/app');assert.equal(app.status,200);assert.match(await app.text(),/src="\/app.js"/);
   const js=await fetch(base+'/app.js');assert.equal(js.status,200);assert.match(js.headers.get('content-type'),/javascript/);
   assert.equal((await fetch(base+'/supabase/schema.sql')).status,404);

@@ -11,9 +11,10 @@ test('real PostgreSQL policies isolate tenants and role changes', async () => {
       CREATE TABLE auth.users(id uuid PRIMARY KEY);
       CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
       GRANT USAGE ON SCHEMA auth TO authenticated;`);
-    for (const file of ['supabase/schema.sql','supabase/migrations/20260522180000_normalize_tables.sql','supabase/migrations/20260924000100_tenant_isolation.sql']) {
+    for (const file of ['supabase/schema.sql','supabase/migrations/20260522180000_normalize_tables.sql','supabase/migrations/20260924000100_tenant_isolation.sql','supabase/migrations/20260926000100_security_grants_indexes.sql']) {
       await db.exec(readFileSync(file,'utf8'));
     }
+    assert.equal((await db.query("SELECT has_function_privilege('anon','public.set_member_role(uuid,text)','execute') AS allowed")).rows[0].allowed,false);
     await db.exec(`INSERT INTO organizations(id,name) VALUES('${ids.a}','A'),('${ids.b}','B');
       INSERT INTO auth.users VALUES('${ids.admin}'),('${ids.viewer}'),('${ids.other}');
       INSERT INTO organization_memberships(user_id,organization_id,role) VALUES
