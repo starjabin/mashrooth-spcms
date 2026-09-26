@@ -43,6 +43,17 @@
 .form-status.info { color: #465c71; }
 .form-footnote { margin: 17px 0 0; font-size: 11px; color: #68798b; line-height: 1.65; }
 .form-footnote a { color: #117d88; font-weight: 750; text-decoration: underline; }
+.privacy-summary { margin: -5px 0 19px; font-size: 11px; line-height: 1.65; color: #53667b; }
+.privacy-summary a { color: #117d88; font-weight: 750; text-decoration: underline; }
+.privacy-page { padding: 64px 0 100px; }
+.privacy-card { max-width: 850px; margin-inline: auto; padding: clamp(25px,5vw,70px); background: #fff; border-radius: 18px; }
+.privacy-card h1 { margin: 13px 0 29px; font-size: clamp(30px,4vw,48px); line-height: 1.2; }
+.privacy-card h1 span { font-size: .68em; color: #3f6673; }
+.privacy-card h2 { margin: 34px 0 10px; font-size: 22px; }
+.privacy-card p { color: #53667b; line-height: 1.75; }
+.privacy-card p[lang="ar"] { font-size: 15px; }
+.privacy-card a { color: #117d88; text-decoration: underline; }
+.privacy-card .privacy-updated { margin-top: 38px; font-size: 12px; }
 [dir="rtl"] .signup-intro h1,[dir="rtl"] .signup-card h2 { letter-spacing: 0; }
 @media (max-width: 900px) { .signup-layout { grid-template-columns: 1fr; gap: 35px; padding-top: 30px; } .signup-intro { padding-top: 0; } .signup-intro h1 { max-width: 740px; } .signup-timeline { display: none; } }
 @media (max-width: 550px) { .signup-layout { padding-top: 21px; padding-bottom: 55px; } .signup-intro h1 { font-size: 42px; } .signup-intro > p:not(.signup-caveat) { font-size: 15px; } .signup-caveat { margin-top: 18px; } .form-grid { grid-template-columns: 1fr; } .signup-card { padding: 24px 19px; } }

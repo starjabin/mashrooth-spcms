@@ -31,6 +31,8 @@ const translations = {
   '101+ users': 'أكثر من ١٠٠ مستخدم',
   'I agree to be contacted about this workspace purchase request. Do not include confidential project or contract details.': 'أوافق على التواصل معي بشأن طلب شراء مساحة العمل. يرجى عدم إدراج تفاصيل مشاريع أو عقود سرية.',
   'Request purchase options': 'اطلب خيارات الشراء',
+  'We use your details only to discuss this request. The inquiry database is in Japan; application requests may be processed in India.': 'نستخدم بياناتك لمناقشة هذا الطلب فقط. توجد قاعدة بيانات الطلبات في اليابان وقد تُعالج طلبات التطبيق في الهند.',
+  'How we handle your inquiry': 'كيف نتعامل مع طلبك',
   'No payment is taken now. Pricing, billing and access will be confirmed separately. Already have an account?': 'لن تُحصّل أي دفعة الآن. سيُؤكد السعر والفوترة والوصول بشكل منفصل. هل لديك حساب؟',
   'Projects, contracts and obligations in view.': 'المشاريع والعقود والالتزامات أمامك بوضوح.'
 };

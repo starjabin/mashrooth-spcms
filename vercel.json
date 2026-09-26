@@ -21,6 +21,14 @@
       "destination": "/signup.html"
     },
     {
+      "source": "/purchase-privacy",
+      "destination": "/purchase-privacy.html"
+    },
+    {
+      "source": "/purchase-privacy/",
+      "destination": "/purchase-privacy.html"
+    },
+    {
       "source": "/app",
       "destination": "/app.html"
     },
