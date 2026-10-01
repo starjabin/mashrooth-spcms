@@ -39,7 +39,7 @@ async function requireAccess(req, write = false, billingOnly = false) {
   if (write && membership.role === 'viewer') throw new AccessError(403, 'Write permission required');
   const ctx = { user, token, organizationId: membership.organization_id, role: membership.role };
   if (!billingOnly) {
-    const { subscription, entitled } = require('./_billing');
+    const { subscription, entitled } = require('../lib/billing.cjs');
     if (!entitled(await subscription(ctx))) throw new AccessError(402, 'Subscription required. Open billing to continue.');
   }
   return ctx;

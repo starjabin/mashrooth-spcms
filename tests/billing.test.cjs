@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const crypto=require('node:crypto');
 const {readFileSync}=require('node:fs');
 const {PGlite}=require('@electric-sql/pglite');
-const {entitled,verifySignature}=require('../api/_billing');
+const {entitled,verifySignature}=require('../lib/billing.cjs');
 const a='11111111-1111-4111-8111-111111111111',b='22222222-2222-4222-8222-222222222222',u='33333333-3333-4333-8333-333333333333';
 test('trial expiry and paid-period checks fail closed',()=>{
  const now=Date.now(),future=new Date(now+10000).toISOString(),past=new Date(now-10000).toISOString();
@@ -59,8 +59,8 @@ test('Postgres billing: RLS, expired direct access, service-only writes, event r
 test('Checkout and portal use membership mapping without entitlement writes; webhook failures retry',async()=>{
  process.env.SUPABASE_URL='https://db.test';process.env.SUPABASE_ANON_KEY='anon';process.env.SUPABASE_SERVICE_ROLE_KEY='service';process.env.STRIPE_SECRET_KEY='sk_test_example';process.env.STRIPE_WEBHOOK_SECRET='whsec_test';process.env.STRIPE_PRICE_GROWTH='price_growth';process.env.STRIPE_PRICE_ENTERPRISE='price_enterprise';process.env.NEXT_PUBLIC_SITE_URL='https://app.test';process.env.APP_ALLOWED_ORIGINS='https://app.test';
  // Reload modules whose public auth configuration is captured at load time.
- for(const p of ['../api/_auth','../api/_http','../api/_billing'])delete require.cache[require.resolve(p)];
- const checkout=require('../api/billing/checkout'),portal=require('../api/billing/portal'),webhook=require('../api/billing/webhook');
+ for(const p of ['../api/_auth','../api/_http','../lib/billing.cjs'])delete require.cache[require.resolve(p)];
+ const checkout=require('../lib/billing/checkout.cjs'),portal=require('../lib/billing/portal.cjs'),webhook=require('../lib/billing/webhook.cjs');
  let role='admin',hasCustomer=false,failWrite=false;const calls=[];
  global.fetch=async(url,opts={})=>{calls.push({url,opts});let d=[];
   if(url.includes('/auth/v1/user'))d={id:u,email:'test@example.test'};
