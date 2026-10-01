@@ -31,13 +31,18 @@ async function membershipFor(userId, token) {
   return membership;
 }
 
-async function requireAccess(req, write = false) {
+async function requireAccess(req, write = false, billingOnly = false) {
   const token = requestToken(req);
   const user = await verifyToken('Bearer ' + token);
   if (!user) throw new AccessError(401, 'Authentication required');
   const membership = await membershipFor(user.id, token);
   if (write && membership.role === 'viewer') throw new AccessError(403, 'Write permission required');
-  return { user, token, organizationId: membership.organization_id, role: membership.role };
+  const ctx = { user, token, organizationId: membership.organization_id, role: membership.role };
+  if (!billingOnly) {
+    const { subscription, entitled } = require('./_billing');
+    if (!entitled(await subscription(ctx))) throw new AccessError(402, 'Subscription required. Open billing to continue.');
+  }
+  return ctx;
 }
 
 function cookie(req, name) {

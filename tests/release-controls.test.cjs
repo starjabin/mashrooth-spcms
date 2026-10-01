@@ -7,7 +7,7 @@ test('versioned records enforce tenant ownership, concurrency, references, quota
  const orgA='11111111-1111-4111-8111-111111111111',orgB='22222222-2222-4222-8222-222222222222';
  const manager='33333333-3333-4333-8333-333333333333',viewer='44444444-4444-4444-8444-444444444444',other='55555555-5555-4555-8555-555555555555';
  try{
-  await db.exec(`CREATE ROLE authenticated; CREATE ROLE anon; CREATE SCHEMA auth;
+  await db.exec(`CREATE ROLE authenticated; CREATE ROLE anon; CREATE ROLE service_role BYPASSRLS; CREATE SCHEMA auth;
     CREATE TABLE auth.users(id uuid PRIMARY KEY);
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
     GRANT USAGE ON SCHEMA auth TO authenticated;`);

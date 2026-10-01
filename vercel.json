@@ -1,7 +1,9 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "regions": ["bom1"],
+  "regions": [
+    "bom1"
+  ],
   "functions": {
     "api/parse.js": {
       "maxDuration": 15,
@@ -12,6 +14,14 @@
     }
   },
   "rewrites": [
+    {
+      "source": "/billing",
+      "destination": "/billing.html"
+    },
+    {
+      "source": "/trial",
+      "destination": "/trial.html"
+    },
     {
       "source": "/signup",
       "destination": "/signup.html"
