@@ -15,6 +15,7 @@ function mock(role='manager',failRead=false) {
     calls.push({url,options});
     let data=[]; let ok=true;
     if(url.includes('/auth/v1/user')) data={id:uid,email:'member@test.invalid',user_metadata:{role:'superadmin'}};
+    else if(url.includes('/subscriptions?')) data=[{status:'trialing',plan:'Growth',trial_ends_at:new Date(Date.now()+86400000).toISOString()}];
     else if(url.includes('/organization_memberships?user_id=')) data=role ? [{organization_id:org,role}] : [];
     else if(url.includes('/auth/v1/token')) data={access_token:'valid-session',user:{id:uid,email:'member@test.invalid',user_metadata:{role:'superadmin'}}};
     else if(failRead && url.includes('/rest/v1/projects')) ok=false;
@@ -44,7 +45,7 @@ test('sync sends end-user token and server-owned tenant filter',async()=>{
   const calls=mock();
   const result=await run(sync,'GET',undefined,{authorization:'Bearer valid-session'});
   assert.equal(result.status,200);
-  const reads=calls.filter(c=>c.url.includes('/rest/v1/')&&!c.url.includes('organization_memberships'));
+  const reads=calls.filter(c=>c.url.includes('/rest/v1/')&&!c.url.includes('organization_memberships')&&!c.url.includes('subscriptions'));
   assert.equal(reads.length,7);
   for(const c of reads){ assert.ok(c.url.includes('organization_id=eq.'+org));assert.equal(c.options.headers.Authorization,'Bearer valid-session');assert.equal(c.options.headers.apikey,'test-public-key'); }
 });

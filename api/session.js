@@ -46,6 +46,12 @@ module.exports = async function handler(req, res) {
       cookies(res, data);
       return res.status(200).json({user});
     }
+    if (action === 'register') {
+      const body = req.body;
+      if (typeof email !== 'string' || email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || typeof password !== 'string' || password.length<12 || password.length>1024 || typeof body.workspaceName !== 'string' || body.workspaceName.trim().length<2 || body.workspaceName.length>160) throw new AccessError(400,'Enter a work email, workspace name and password of at least 12 characters');
+      await supabase('/auth/v1/signup', null, {method:'POST',body:JSON.stringify({email:email.trim().toLowerCase(),password,data:{workspace_name:body.workspaceName.trim()}})});
+      return res.status(200).json({message:'Check your email to confirm your account, then sign in. Your 14-day trial starts after confirmation.'});
+    }
     if (action !== 'login') throw new AccessError(400, 'Unknown session action');
     if (typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
         typeof password !== 'string' || !password || password.length > 1024) throw new AccessError(400, 'Enter your email and password');
@@ -53,6 +59,7 @@ module.exports = async function handler(req, res) {
     try { data = await supabase('/auth/v1/token?grant_type=password', null, {method:'POST', body:JSON.stringify({email:email.trim().toLowerCase(),password})}); }
     catch (e) { throw new AccessError(e.status === 429 ? 429 : 401, e.status === 429 ? 'Too many sign-in attempts. Please wait.' : 'Invalid email or password'); }
     if (!data?.access_token || !data.user?.id) throw new AccessError(401, 'Invalid email or password');
+    await supabase('/rest/v1/rpc/ensure_trial_workspace', data.access_token, {method:'POST',body:JSON.stringify({workspace_name:data.user.user_metadata?.workspace_name || 'My workspace'})});
     const user = await profile(data.user, data.access_token);
     cookies(res, data);
     return res.status(200).json({user});

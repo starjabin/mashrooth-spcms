@@ -36,3 +36,5 @@ dist/
 coverage/
 .env.*
 !.env.example
+
+supabase/.temp/

@@ -16,6 +16,7 @@ test('local server serves real assets, protects source files and reports missing
   assert.equal((await fetch(base+'/signup.js')).status,200);
   const inquiry=await fetch(base+'/api/purchase-requests',{method:'POST',headers:{'Content-Type':'application/json',Origin:'http://localhost:3000'},body:JSON.stringify({contact_name:'Test Person',work_email:'test@example.com',organization_name:'Example',seat_range:'1-5',plan:'team',contact_consent:true})});
   assert.equal(inquiry.status,503);assert.equal((await inquiry.json()).received,undefined);
+  for(const route of ['/billing','/billing.js','/trial','/trial.js'])assert.equal((await fetch(base+route)).status,200);
   const app=await fetch(base+'/app');assert.equal(app.status,200);assert.match(await app.text(),/src="\/app.js"/);
   const js=await fetch(base+'/app.js');assert.equal(js.status,200);assert.match(js.headers.get('content-type'),/javascript/);
   assert.equal((await fetch(base+'/supabase/schema.sql')).status,404);

@@ -10,6 +10,7 @@ const headers={origin:'https://app.test',cookie:'mashrooth_access=test-access;ma
 function mock(role='manager',conflict=false){const calls=[];global.fetch=async(url,options={})=>{calls.push({url,options});let data=[];let status=200;
  if(url.includes('/auth/v1/token'))data={access_token:'test-access',refresh_token:'test-refresh',expires_in:3600,user:{id:uid,email:'tester@example.test'}};
  else if(url.includes('/auth/v1/user'))data={id:uid,email:'tester@example.test'};
+ else if(url.includes('/subscriptions?'))data=[{status:'trialing',plan:'Growth',trial_ends_at:new Date(Date.now()+86400000).toISOString()}];
  else if(url.includes('organization_memberships'))data=role?[{organization_id:org,role}]:[];
  else if(url.includes('/organizations?'))data=[{id:org,name:'Test Org'}];
  else if(url.includes('/rpc/mutate_record')){data=conflict?{code:'PT409'}:{id:'record1',version:2};if(conflict)status=409;}
